@@ -1,0 +1,33 @@
+{
+  "name": "playwright-flakerfinder",
+  "version": "1.0.0",
+  "description": "Demonstrates techniques for finding and addressing test flakiness",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:local-headed": "playwright test --project=chrome --headed",
+    "test:local-headless": "playwright test --project=chrome",
+    "test:local-flake": "playwright test --project=chrome-for-flake",
+    "test:ci": "playwright test --project=chrome-for-flake",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "test:compare": "node scripts/performance-comparison.js",
+    "install": "playwright install",
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "playwright",
+    "testing",
+    "flakiness",
+    "e2e",
+    "automation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}
