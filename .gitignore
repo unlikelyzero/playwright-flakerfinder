@@ -22,6 +22,9 @@ playwright/.cache/
 *.swp
 *.swo
 
+# MCP Configuration (uncomment if you want to keep personal MCP configs private)
+# .cursor-mcp-config.json
+
 # OS
 .DS_Store
 Thumbs.db
