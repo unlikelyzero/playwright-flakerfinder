@@ -16,18 +16,37 @@ The key comparison is between **Local Headless** (fast, reliable) and **CI Mode*
 ## Features
 
 - Two browser configurations: `chrome` and `chrome-for-flake`
-- CPU throttling (4x slower) and network throttling (1.5 Mbps down, 0.75 Mbps up) for `chrome-for-flake`
+- CPU throttling (2x slower) and network throttling (3 Mbps down, 1.5 Mbps up) for `chrome-for-flake`
 - Tests targeting crowdstrike.com to demonstrate real-world scenarios
 - Examples of timing-sensitive operations that may fail in throttled environments
 
 ## Setup
 
-1. Install dependencies:
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd playwright-flakerfinder
+```
+
+2. Install Node.js LTS (using nvm recommended):
+```bash
+# Install nvm if you haven't already
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+
+# Install and use Node.js LTS 22
+nvm install 22
+nvm use 22
+
+# Verify Node.js version
+node --version  # Should show v22.x.x
+```
+
+3. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Install Playwright browsers:
+4. Install Playwright browsers:
 ```bash
 npm run install
 ```
@@ -120,6 +139,25 @@ The workflow will show:
 2. Click on any workflow run
 3. View the **Performance Comparison Report** in the job summary
 4. Download artifacts for detailed test results
+
+## Development with nvm
+
+This project uses Node.js LTS version 22. The `.nvmrc` file specifies the exact version for consistency across environments.
+
+### Using nvm locally:
+```bash
+# Use the project's Node.js version
+nvm use
+
+# Or install and use Node.js 22
+nvm install 22
+nvm use 22
+```
+
+### Benefits of nvm:
+- **Version Consistency**: Ensures all developers use the same Node.js version
+- **Easy Switching**: Switch between Node.js versions for different projects
+- **CI/CD Alignment**: GitHub Actions uses the same version as specified in `.nvmrc`
 
 ## Browser Configurations
 

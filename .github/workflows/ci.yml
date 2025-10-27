@@ -14,11 +14,16 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Setup Node.js
+    - name: Setup Node.js LTS
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
         cache: 'npm'
+
+    - name: Verify Node.js version
+      run: |
+        echo "Node.js version: $(node --version)"
+        echo "npm version: $(npm --version)"
 
     - name: Install dependencies
       run: npm ci
@@ -43,7 +48,7 @@ jobs:
           echo "| Mode | Duration | Load Times | Throttling | Pass Rate |" >> $GITHUB_STEP_SUMMARY
           echo "|------|----------|------------|------------|-----------|" >> $GITHUB_STEP_SUMMARY
           
-          # Extract data from JSON report
+          # Extract data from JSON report using Node.js
           LOCAL_DURATION=$(node -p "Math.round(require('./performance-report.json').local.duration/1000)")
           CI_DURATION=$(node -p "Math.round(require('./performance-report.json').ci.duration/1000)")
           LOCAL_PASSED=$(node -p "require('./performance-report.json').local.metrics.testResults.passed")
@@ -54,10 +59,9 @@ jobs:
           CI_LOAD=$(node -p "require('./performance-report.json').ci.metrics.loadTimes.length > 0 ? Math.round(require('./performance-report.json').ci.metrics.loadTimes.reduce((a,b)=>a+b,0)/require('./performance-report.json').ci.metrics.loadTimes.length) : 'N/A'")
           THROTTLING=$(node -p "require('./performance-report.json').ci.metrics.throttlingApplied ? '✅ Yes' : '❌ No'")
           
-          LOCAL_TOTAL=$((LOCAL_PASSED + LOCAL_FAILED))
-          CI_TOTAL=$((CI_PASSED + CI_FAILED))
-          LOCAL_RATE=$(node -p "LOCAL_TOTAL > 0 ? ((LOCAL_PASSED / LOCAL_TOTAL) * 100).toFixed(1) : 'N/A'")
-          CI_RATE=$(node -p "CI_TOTAL > 0 ? ((CI_PASSED / CI_TOTAL) * 100).toFixed(1) : 'N/A'")
+          # Calculate pass rates using Node.js
+          LOCAL_RATE=$(node -p "const data = require('./performance-report.json').local.metrics.testResults; const total = data.passed + data.failed; total > 0 ? ((data.passed / total) * 100).toFixed(1) : 'N/A'")
+          CI_RATE=$(node -p "const data = require('./performance-report.json').ci.metrics.testResults; const total = data.passed + data.failed; total > 0 ? ((data.passed / total) * 100).toFixed(1) : 'N/A'")
           
           echo "| Local Headless | ${LOCAL_DURATION}s | ${LOCAL_LOAD}ms | ❌ No | ${LOCAL_RATE}% |" >> $GITHUB_STEP_SUMMARY
           echo "| CI Mode | ${CI_DURATION}s | ${CI_LOAD}ms | ${THROTTLING} | ${CI_RATE}% |" >> $GITHUB_STEP_SUMMARY
@@ -76,7 +80,8 @@ jobs:
         echo "- **CI Environment**: Throttled conditions cause realistic flakiness" >> $GITHUB_STEP_SUMMARY
         echo "- **Flakiness Demo**: Perfect example of 'works on my machine' problem" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Throttling Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "### Environment Configuration" >> $GITHUB_STEP_SUMMARY
+        echo "- Node.js: LTS 22 (specified in .nvmrc)" >> $GITHUB_STEP_SUMMARY
         echo "- CPU: 2x slower than normal" >> $GITHUB_STEP_SUMMARY
         echo "- Network: 3 Mbps down, 1.5 Mbps up" >> $GITHUB_STEP_SUMMARY
         echo "- Latency: 100ms" >> $GITHUB_STEP_SUMMARY
