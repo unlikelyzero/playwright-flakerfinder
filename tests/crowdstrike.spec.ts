@@ -1,6 +1,6 @@
 import { test, expect } from '../baseFixtures';
 
-test.describe('CrowdStrike Website Tests', () => {
+test.describe('crowdstrike website tests', () => {
   
   test('should load CrowdStrike homepage - standard chrome', async ({ page }) => {
     const startTime = Date.now();
@@ -38,25 +38,20 @@ test.describe('CrowdStrike Website Tests', () => {
     // Wait for basic page structure
     await page.waitForSelector('body');
     
+    // Handle cookie consent overlay if present
+    await page.click('#onetrust-accept-btn-handler');
+    
     // This test demonstrates potential flakiness with timing-sensitive operations
     // In a throttled environment, these operations might fail intermittently
     
-    // Try to interact with elements that might not be ready
+    // Interact with elements that might not be ready
     const heroSection = page.locator('[data-testid="hero-section"], .hero, [class*="hero"]').first();
     
-    if (await heroSection.isVisible()) {
-      await heroSection.hover();
-      await page.waitForTimeout(100); // Small delay that might cause issues in slow environments
-    }
+    await heroSection.hover();
     
-    // Look for interactive elements that might be timing-sensitive
-    const buttons = page.locator('button, [role="button"], a[href]');
-    const buttonCount = await buttons.count();
-    
-    if (buttonCount > 0) {
-      // Try to click the first button - this might fail in throttled environments
-      await buttons.first().click();
-    }
+    // Verify the page is interactive by checking for common elements
+    await expect(page.locator('body')).toBeVisible();
+    await expect(page.locator('h1').first()).toBeVisible();
   });
 
   test('should handle slow network conditions gracefully', async ({ page }) => {

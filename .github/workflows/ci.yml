@@ -28,64 +28,128 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
+    - name: Run ESLint
+      run: npm run lint
+
     - name: Install Playwright browsers
       run: npx playwright install --with-deps
 
-    - name: Run Performance Comparison
-      run: npm run test:compare
+    - name: Run CI Mode Tests (Actual CI Environment)
+      run: npm run test:local-headless
       continue-on-error: true
       env:
         CI: true
 
-    - name: Generate Performance Report
+    - name: Generate CI Performance Data
       run: |
-        echo "## 🚀 Performance Comparison Report" >> $GITHUB_STEP_SUMMARY
+        echo "Generating CI performance data..."
+        # Create a simple script to capture CI performance
+        node -e "
+        const { execSync } = require('child_process');
+        const fs = require('fs');
+        
+        console.log('Capturing CI performance metrics...');
+        
+        // Run tests and capture output
+        try {
+          const startTime = Date.now();
+          const output = execSync('npm run test:local-headless', { 
+            encoding: 'utf8',
+            stdio: 'pipe'
+          });
+          const endTime = Date.now();
+          const duration = endTime - startTime;
+          
+          // Extract metrics from output
+          const loadTimeMatches = output.match(/(\w+)\s+load time:\s+(\d+)ms/g);
+          const loadTimes = [];
+          if (loadTimeMatches) {
+            loadTimeMatches.forEach(match => {
+              const timeMatch = match.match(/(\d+)ms/);
+              if (timeMatch) {
+                loadTimes.push(parseInt(timeMatch[1]));
+              }
+            });
+          }
+          
+          const passedMatch = output.match(/(\d+)\s+passed/);
+          const failedMatch = output.match(/(\d+)\s+failed/);
+          
+          const ciData = {
+            success: true,
+            duration: duration,
+            metrics: {
+              loadTimes: loadTimes,
+              throttlingApplied: false,
+              testResults: {
+                passed: passedMatch ? parseInt(passedMatch[1]) : 0,
+                failed: failedMatch ? parseInt(failedMatch[1]) : 0
+              }
+            },
+            output: output,
+            timestamp: new Date().toISOString(),
+            environment: 'GitHub Actions CI'
+          };
+          
+          fs.writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
+          console.log('✅ CI performance data saved');
+        } catch (error) {
+          console.log('❌ Failed to capture CI data:', error.message);
+          const ciData = {
+            success: false,
+            duration: 0,
+            metrics: { loadTimes: [], throttlingApplied: false, testResults: { passed: 0, failed: 0 } },
+            output: error.stdout || error.message,
+            timestamp: new Date().toISOString(),
+            environment: 'GitHub Actions CI'
+          };
+          fs.writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
+        }
+        "
+
+    - name: Generate CI Performance Report
+      run: |
+        echo "## 🚀 CI Performance Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Actual CI Environment Results" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         
-        if [ -f "performance-report.json" ]; then
-          echo "### Test Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Mode | Duration | Load Times | Throttling | Pass Rate |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|----------|------------|------------|-----------|" >> $GITHUB_STEP_SUMMARY
+        if [ -f "ci-performance-report.json" ]; then
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
           
-          # Extract data from JSON report using Node.js
-          LOCAL_DURATION=$(node -p "Math.round(require('./performance-report.json').local.duration/1000)")
-          CI_DURATION=$(node -p "Math.round(require('./performance-report.json').ci.duration/1000)")
-          LOCAL_PASSED=$(node -p "require('./performance-report.json').local.metrics.testResults.passed")
-          LOCAL_FAILED=$(node -p "require('./performance-report.json').local.metrics.testResults.failed")
-          CI_PASSED=$(node -p "require('./performance-report.json').ci.metrics.testResults.passed")
-          CI_FAILED=$(node -p "require('./performance-report.json').ci.metrics.testResults.failed")
-          LOCAL_LOAD=$(node -p "require('./performance-report.json').local.metrics.loadTimes.length > 0 ? Math.round(require('./performance-report.json').local.metrics.loadTimes.reduce((a,b)=>a+b,0)/require('./performance-report.json').local.metrics.loadTimes.length) : 'N/A'")
-          CI_LOAD=$(node -p "require('./performance-report.json').ci.metrics.loadTimes.length > 0 ? Math.round(require('./performance-report.json').ci.metrics.loadTimes.reduce((a,b)=>a+b,0)/require('./performance-report.json').ci.metrics.loadTimes.length) : 'N/A'")
-          THROTTLING=$(node -p "require('./performance-report.json').ci.metrics.throttlingApplied ? '✅ Yes' : '❌ No'")
+          CI_DURATION=$(node -p "Math.round(require('./ci-performance-report.json').duration/1000)")
+          CI_PASSED=$(node -p "require('./ci-performance-report.json').metrics.testResults.passed")
+          CI_FAILED=$(node -p "require('./ci-performance-report.json').metrics.testResults.failed")
+          CI_LOAD=$(node -p "require('./ci-performance-report.json').metrics.loadTimes.length > 0 ? Math.round(require('./ci-performance-report.json').metrics.loadTimes.reduce((a,b)=>a+b,0)/require('./ci-performance-report.json').metrics.loadTimes.length) : 'N/A'")
+          CI_TOTAL=$((CI_PASSED + CI_FAILED))
+          CI_RATE=$(node -p "CI_TOTAL > 0 ? ((CI_PASSED / CI_TOTAL) * 100).toFixed(1) : 'N/A'")
           
-          # Calculate pass rates using Node.js
-          LOCAL_RATE=$(node -p "const data = require('./performance-report.json').local.metrics.testResults; const total = data.passed + data.failed; total > 0 ? ((data.passed / total) * 100).toFixed(1) : 'N/A'")
-          CI_RATE=$(node -p "const data = require('./performance-report.json').ci.metrics.testResults; const total = data.passed + data.failed; total > 0 ? ((data.passed / total) * 100).toFixed(1) : 'N/A'")
-          
-          echo "| Local Headless | ${LOCAL_DURATION}s | ${LOCAL_LOAD}ms | ❌ No | ${LOCAL_RATE}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| CI Mode | ${CI_DURATION}s | ${CI_LOAD}ms | ${THROTTLING} | ${CI_RATE}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Duration | ${CI_DURATION}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Load Time | ${CI_LOAD}ms |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pass Rate | ${CI_RATE}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Tests Passed | ${CI_PASSED}/${CI_TOTAL} |" >> $GITHUB_STEP_SUMMARY
         else
-          echo "### Test Results Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Mode | Environment | Performance | Expected Behavior |" >> $GITHUB_STEP_SUMMARY
-          echo "|------|-------------|-------------|-------------------|" >> $GITHUB_STEP_SUMMARY
-          echo "| **Local Headless** | Full desktop performance | Fast (~2-3s) | Should pass most tests |" >> $GITHUB_STEP_SUMMARY
-          echo "| **CI Mode** | Throttled (2x CPU, 3Mbps, 100ms latency) | Slow (~60s+) | Should demonstrate flakiness |" >> $GITHUB_STEP_SUMMARY
+          echo "❌ CI performance data not available" >> $GITHUB_STEP_SUMMARY
         fi
         
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Key Insights" >> $GITHUB_STEP_SUMMARY
-        echo "- **Local Development**: Tests run fast with full resources" >> $GITHUB_STEP_SUMMARY
-        echo "- **CI Environment**: Throttled conditions cause realistic flakiness" >> $GITHUB_STEP_SUMMARY
-        echo "- **Flakiness Demo**: Perfect example of 'works on my machine' problem" >> $GITHUB_STEP_SUMMARY
+        echo "This shows how tests perform in the actual GitHub Actions CI environment:" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: GitHub Actions Ubuntu runner" >> $GITHUB_STEP_SUMMARY
+        echo "- **Resources**: Limited CPU and memory compared to local development" >> $GITHUB_STEP_SUMMARY
+        echo "- **Network**: Shared infrastructure with potential latency" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Local Simulation Available" >> $GITHUB_STEP_SUMMARY
+        echo "Run \`npm run test:compare\` locally to compare all 4 modes:" >> $GITHUB_STEP_SUMMARY
+        echo "- **Local Headed**: Full desktop performance + UI" >> $GITHUB_STEP_SUMMARY
+        echo "- **Local Headless**: Full desktop performance" >> $GITHUB_STEP_SUMMARY
+        echo "- **Local Flake**: Simulated CI with throttling" >> $GITHUB_STEP_SUMMARY
+        echo "- **CI Mode**: Actual CI data (archived from this run)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "### Environment Configuration" >> $GITHUB_STEP_SUMMARY
         echo "- Node.js: LTS 22 (specified in .nvmrc)" >> $GITHUB_STEP_SUMMARY
-        echo "- CPU: 2x slower than normal" >> $GITHUB_STEP_SUMMARY
-        echo "- Network: 3 Mbps down, 1.5 Mbps up" >> $GITHUB_STEP_SUMMARY
-        echo "- Latency: 100ms" >> $GITHUB_STEP_SUMMARY
-        echo "- Connection: 4G cellular" >> $GITHUB_STEP_SUMMARY
+        echo "- Runner: GitHub Actions Ubuntu" >> $GITHUB_STEP_SUMMARY
+        echo "- Playwright: Latest version with dependencies" >> $GITHUB_STEP_SUMMARY
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
@@ -102,3 +166,11 @@ jobs:
         name: test-results
         path: test-results/
         retention-days: 30
+
+    - name: Upload CI performance data
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: ci-performance-data
+        path: ci-performance-report.json
+        retention-days: 90

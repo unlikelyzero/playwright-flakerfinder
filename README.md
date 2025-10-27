@@ -11,7 +11,7 @@ This project demonstrates how test flakiness can be identified and addressed thr
 3. **Local Flake**: Simulate CI conditions locally
 4. **CI Mode**: Production CI environment testing
 
-The key comparison is between **Local Headless** (fast, reliable) and **CI Mode** (throttled, potentially flaky) to demonstrate how underpowered CI environments can cause test failures.
+The key comparison is between **Local Headless** (fast, reliable) and **Local Flake** (simulated CI with throttling) to demonstrate how underpowered CI environments can cause test failures. The actual CI environment provides real-world performance data.
 
 ## Features
 
@@ -112,7 +112,11 @@ npm test
 ```bash
 npm run test:compare
 ```
-Runs both local and CI modes and generates a detailed performance comparison report.
+Runs all 4 modes and generates a comprehensive performance comparison report:
+1. **Local Headed**: Full desktop performance + UI
+2. **Local Headless**: Full desktop performance  
+3. **Local Flake**: Simulated CI with throttling
+4. **CI Mode**: Actual CI data (if available from previous CI run)
 
 ## GitHub Actions CI/CD
 
@@ -120,25 +124,32 @@ This project includes a GitHub Actions workflow that automatically runs performa
 
 ### Workflow Features
 
-- **Performance Comparison**: Runs both local headless and CI mode tests
-- **Detailed Reporting**: Generates comprehensive performance metrics
-- **Artifact Upload**: Saves test results and reports for download
-- **Summary Generation**: Creates GitHub step summaries with key insights
+- **Actual CI Testing**: Runs tests in real GitHub Actions environment
+- **CI Performance Data**: Generates and archives CI performance metrics
+- **Performance Reporting**: Shows how tests perform in actual CI
+- **Artifact Upload**: Saves test results, reports, and CI data for download
+- **Summary Generation**: Creates GitHub step summaries with CI insights
 
 ### CI Results
 
-The workflow will show:
-- **Local Headless**: Baseline performance with full desktop resources
-- **CI Mode**: Throttled performance simulating underpowered CI environments
-- **Performance Metrics**: Load times, pass rates, and throttling status
-- **Key Insights**: Comparison between local and CI performance
+The workflow generates:
+- **Actual CI Performance**: How tests run in real GitHub Actions environment
+- **Archived CI Data**: `ci-performance-report.json` saved as artifact (90 days retention)
+- **Resource Constraints**: Limited CPU/memory compared to local development
+- **Real-world Flakiness**: Natural performance differences in CI vs local
+- **4-Mode Comparison**: Enables comprehensive local vs CI analysis
 
 ### Viewing Results
 
 1. Go to the **Actions** tab in your GitHub repository
 2. Click on any workflow run
-3. View the **Performance Comparison Report** in the job summary
-4. Download artifacts for detailed test results
+3. View the **CI Performance Report** in the job summary
+4. Download artifacts:
+   - `playwright-report`: HTML test report
+   - `test-results`: Raw test results
+   - `ci-performance-data`: CI performance metrics (90 days retention)
+5. Use CI data locally: Download `ci-performance-data` and place as `ci-performance-report.json` in project root
+6. Run `npm run test:compare` locally for comprehensive 4-mode comparison
 
 ## Development with nvm
 

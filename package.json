@@ -1,6 +1,7 @@
 {
   "name": "playwright-flakerfinder",
   "version": "1.0.0",
+  "type": "module",
   "description": "Demonstrates techniques for finding and addressing test flakiness",
   "main": "index.js",
   "scripts": {
@@ -14,7 +15,9 @@
     "test:compare": "node scripts/performance-comparison.js",
     "install": "playwright install",
     "build": "tsc",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "keywords": [
     "playwright",
@@ -28,6 +31,10 @@
   "devDependencies": {
     "@playwright/test": "1.56.1",
     "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.38.0",
+    "eslint-plugin-playwright": "^2.2.2",
     "typescript": "^5.0.0"
   }
 }
