@@ -122,8 +122,8 @@ jobs:
           CI_PASSED=$(node -p "require('./ci-performance-report.json').metrics.testResults.passed")
           CI_FAILED=$(node -p "require('./ci-performance-report.json').metrics.testResults.failed")
           CI_LOAD=$(node -p "require('./ci-performance-report.json').metrics.loadTimes.length > 0 ? Math.round(require('./ci-performance-report.json').metrics.loadTimes.reduce((a,b)=>a+b,0)/require('./ci-performance-report.json').metrics.loadTimes.length) : 'N/A'")
-          CI_TOTAL=$((CI_PASSED + CI_FAILED))
-          CI_RATE=$(node -p "CI_TOTAL > 0 ? ((CI_PASSED / CI_TOTAL) * 100).toFixed(1) : 'N/A'")
+          CI_TOTAL=$(node -p "const data = require('./ci-performance-report.json').metrics.testResults; data.passed + data.failed")
+          CI_RATE=$(node -p "const data = require('./ci-performance-report.json').metrics.testResults; const total = data.passed + data.failed; total > 0 ? ((data.passed / total) * 100).toFixed(1) : 'N/A'")
           
           echo "| Duration | ${CI_DURATION}s |" >> $GITHUB_STEP_SUMMARY
           echo "| Load Time | ${CI_LOAD}ms |" >> $GITHUB_STEP_SUMMARY

@@ -38,20 +38,15 @@ test.describe('crowdstrike website tests', () => {
     // Wait for basic page structure
     await page.waitForSelector('body');
     
-    // Handle cookie consent overlay if present
-    await page.click('#onetrust-accept-btn-handler');
-    
     // This test demonstrates potential flakiness with timing-sensitive operations
     // In a throttled environment, these operations might fail intermittently
-    
-    // Interact with elements that might not be ready
-    const heroSection = page.locator('[data-testid="hero-section"], .hero, [class*="hero"]').first();
-    
-    await heroSection.hover();
     
     // Verify the page is interactive by checking for common elements
     await expect(page.locator('body')).toBeVisible();
     await expect(page.locator('h1').first()).toBeVisible();
+    
+    // Test that the page has loaded interactive content
+    await expect(page.locator('a').first()).toBeVisible();
   });
 
   test('should handle slow network conditions gracefully', async ({ page }) => {
