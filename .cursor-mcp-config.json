@@ -1,11 +1,7 @@
 {
   "mcpServers": {
     "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"],
-      "env": {
-        "NODE_ENV": "development"
-      }
+      "url": "http://localhost:3001/mcp"
     }
   }
 }

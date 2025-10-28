@@ -2,175 +2,175 @@ name: Playwright FlakerFinder CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test-comparison:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js LTS
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
+      - name: Setup Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
 
-    - name: Verify Node.js version
-      run: |
-        echo "Node.js version: $(node --version)"
-        echo "npm version: $(npm --version)"
+      - name: Verify Node.js version
+        run: |
+          echo "Node.js version: $(node --version)"
+          echo "npm version: $(npm --version)"
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Run ESLint
-      run: npm run lint
+      - name: Run ESLint
+        run: npm run lint
 
-    - name: Install Playwright browsers
-      run: npx playwright install --with-deps
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
 
-    - name: Run CI Mode Tests (Actual CI Environment)
-      run: npm run test:local-headless
-      continue-on-error: true
-      env:
-        CI: true
+      - name: Run CI Mode Tests (Actual CI Environment)
+        run: npm run test:local-headless
+        continue-on-error: true
+        env:
+          CI: true
 
-    - name: Generate CI Performance Data
-      run: |
-        echo "Generating CI performance data..."
-        # Create a simple script to capture CI performance
-        node -e "
-        const { execSync } = require('child_process');
-        const fs = require('fs');
-        
-        console.log('Capturing CI performance metrics...');
-        
-        // Run tests and capture output
-        try {
-          const startTime = Date.now();
-          const output = execSync('npm run test:local-headless', { 
-            encoding: 'utf8',
-            stdio: 'pipe'
-          });
-          const endTime = Date.now();
-          const duration = endTime - startTime;
-          
-          // Extract metrics from output
-          const loadTimeMatches = output.match(/(\w+)\s+load time:\s+(\d+)ms/g);
-          const loadTimes = [];
-          if (loadTimeMatches) {
-            loadTimeMatches.forEach(match => {
-              const timeMatch = match.match(/(\d+)ms/);
-              if (timeMatch) {
-                loadTimes.push(parseInt(timeMatch[1]));
-              }
+      - name: Generate CI Performance Data
+        run: |
+          echo "Generating CI performance data..."
+          # Create a simple script to capture CI performance
+          node -e "
+          const { execSync } = require('child_process');
+          const fs = require('fs');
+
+          console.log('Capturing CI performance metrics...');
+
+          // Run tests and capture output
+          try {
+            const startTime = Date.now();
+            const output = execSync('npm run test:local-headless', { 
+              encoding: 'utf8',
+              stdio: 'pipe'
             });
+            const endTime = Date.now();
+            const duration = endTime - startTime;
+            
+            // Extract metrics from output
+            const loadTimeMatches = output.match(/(\w+)\s+load time:\s+(\d+)ms/g);
+            const loadTimes = [];
+            if (loadTimeMatches) {
+              loadTimeMatches.forEach(match => {
+                const timeMatch = match.match(/(\d+)ms/);
+                if (timeMatch) {
+                  loadTimes.push(parseInt(timeMatch[1]));
+                }
+              });
+            }
+            
+            const passedMatch = output.match(/(\d+)\s+passed/);
+            const failedMatch = output.match(/(\d+)\s+failed/);
+            
+            const ciData = {
+              success: true,
+              duration: duration,
+              metrics: {
+                loadTimes: loadTimes,
+                throttlingApplied: false,
+                testResults: {
+                  passed: passedMatch ? parseInt(passedMatch[1]) : 0,
+                  failed: failedMatch ? parseInt(failedMatch[1]) : 0
+                }
+              },
+              output: output,
+              timestamp: new Date().toISOString(),
+              environment: 'GitHub Actions CI'
+            };
+            
+            fs.writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
+            console.log('✅ CI performance data saved');
+          } catch (error) {
+            console.log('❌ Failed to capture CI data:', error.message);
+            const ciData = {
+              success: false,
+              duration: 0,
+              metrics: { loadTimes: [], throttlingApplied: false, testResults: { passed: 0, failed: 0 } },
+              output: error.stdout || error.message,
+              timestamp: new Date().toISOString(),
+              environment: 'GitHub Actions CI'
+            };
+            fs.writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
           }
-          
-          const passedMatch = output.match(/(\d+)\s+passed/);
-          const failedMatch = output.match(/(\d+)\s+failed/);
-          
-          const ciData = {
-            success: true,
-            duration: duration,
-            metrics: {
-              loadTimes: loadTimes,
-              throttlingApplied: false,
-              testResults: {
-                passed: passedMatch ? parseInt(passedMatch[1]) : 0,
-                failed: failedMatch ? parseInt(failedMatch[1]) : 0
-              }
-            },
-            output: output,
-            timestamp: new Date().toISOString(),
-            environment: 'GitHub Actions CI'
-          };
-          
-          fs.writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
-          console.log('✅ CI performance data saved');
-        } catch (error) {
-          console.log('❌ Failed to capture CI data:', error.message);
-          const ciData = {
-            success: false,
-            duration: 0,
-            metrics: { loadTimes: [], throttlingApplied: false, testResults: { passed: 0, failed: 0 } },
-            output: error.stdout || error.message,
-            timestamp: new Date().toISOString(),
-            environment: 'GitHub Actions CI'
-          };
-          fs.writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
-        }
-        "
+          "
 
-    - name: Generate CI Performance Report
-      run: |
-        echo "## 🚀 CI Performance Report" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Actual CI Environment Results" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        
-        if [ -f "ci-performance-report.json" ]; then
-          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
-          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
-          
-          CI_DURATION=$(node -p "Math.round(require('./ci-performance-report.json').duration/1000)")
-          CI_PASSED=$(node -p "require('./ci-performance-report.json').metrics.testResults.passed")
-          CI_FAILED=$(node -p "require('./ci-performance-report.json').metrics.testResults.failed")
-          CI_LOAD=$(node -p "require('./ci-performance-report.json').metrics.loadTimes.length > 0 ? Math.round(require('./ci-performance-report.json').metrics.loadTimes.reduce((a,b)=>a+b,0)/require('./ci-performance-report.json').metrics.loadTimes.length) : 'N/A'")
-          CI_TOTAL=$(node -p "const data = require('./ci-performance-report.json').metrics.testResults; data.passed + data.failed")
-          CI_RATE=$(node -p "const data = require('./ci-performance-report.json').metrics.testResults; const total = data.passed + data.failed; total > 0 ? ((data.passed / total) * 100).toFixed(1) : 'N/A'")
-          
-          echo "| Duration | ${CI_DURATION}s |" >> $GITHUB_STEP_SUMMARY
-          echo "| Load Time | ${CI_LOAD}ms |" >> $GITHUB_STEP_SUMMARY
-          echo "| Pass Rate | ${CI_RATE}% |" >> $GITHUB_STEP_SUMMARY
-          echo "| Tests Passed | ${CI_PASSED}/${CI_TOTAL} |" >> $GITHUB_STEP_SUMMARY
-        else
-          echo "❌ CI performance data not available" >> $GITHUB_STEP_SUMMARY
-        fi
-        
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "This shows how tests perform in the actual GitHub Actions CI environment:" >> $GITHUB_STEP_SUMMARY
-        echo "- **Environment**: GitHub Actions Ubuntu runner" >> $GITHUB_STEP_SUMMARY
-        echo "- **Resources**: Limited CPU and memory compared to local development" >> $GITHUB_STEP_SUMMARY
-        echo "- **Network**: Shared infrastructure with potential latency" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Local Simulation Available" >> $GITHUB_STEP_SUMMARY
-        echo "Run \`npm run test:compare\` locally to compare all 4 modes:" >> $GITHUB_STEP_SUMMARY
-        echo "- **Local Headed**: Full desktop performance + UI" >> $GITHUB_STEP_SUMMARY
-        echo "- **Local Headless**: Full desktop performance" >> $GITHUB_STEP_SUMMARY
-        echo "- **Local Flake**: Simulated CI with throttling" >> $GITHUB_STEP_SUMMARY
-        echo "- **CI Mode**: Actual CI data (archived from this run)" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Environment Configuration" >> $GITHUB_STEP_SUMMARY
-        echo "- Node.js: LTS 22 (specified in .nvmrc)" >> $GITHUB_STEP_SUMMARY
-        echo "- Runner: GitHub Actions Ubuntu" >> $GITHUB_STEP_SUMMARY
-        echo "- Playwright: Latest version with dependencies" >> $GITHUB_STEP_SUMMARY
+      - name: Generate CI Performance Report
+        run: |
+          echo "## 🚀 CI Performance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Actual CI Environment Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+          if [ -f "ci-performance-report.json" ]; then
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            
+            CI_DURATION=$(node -p "Math.round(require('./ci-performance-report.json').duration/1000)")
+            CI_PASSED=$(node -p "require('./ci-performance-report.json').metrics.testResults.passed")
+            CI_FAILED=$(node -p "require('./ci-performance-report.json').metrics.testResults.failed")
+            CI_LOAD=$(node -p "require('./ci-performance-report.json').metrics.loadTimes.length > 0 ? Math.round(require('./ci-performance-report.json').metrics.loadTimes.reduce((a,b)=>a+b,0)/require('./ci-performance-report.json').metrics.loadTimes.length) : 'N/A'")
+            CI_TOTAL=$(node -p "const data = require('./ci-performance-report.json').metrics.testResults; data.passed + data.failed")
+            CI_RATE=$(node -p "const data = require('./ci-performance-report.json').metrics.testResults; const total = data.passed + data.failed; total > 0 ? ((data.passed / total) * 100).toFixed(1) : 'N/A'")
+            
+            echo "| Duration | ${CI_DURATION}s |" >> $GITHUB_STEP_SUMMARY
+            echo "| Load Time | ${CI_LOAD}ms |" >> $GITHUB_STEP_SUMMARY
+            echo "| Pass Rate | ${CI_RATE}% |" >> $GITHUB_STEP_SUMMARY
+            echo "| Tests Passed | ${CI_PASSED}/${CI_TOTAL} |" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ CI performance data not available" >> $GITHUB_STEP_SUMMARY
+          fi
 
-    - name: Upload test results (raw)
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: test-results
-        path: test-results/
-        retention-days: 30
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This shows how tests perform in the actual GitHub Actions CI environment:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: GitHub Actions Ubuntu runner" >> $GITHUB_STEP_SUMMARY
+          echo "- **Resources**: Limited CPU and memory compared to local development" >> $GITHUB_STEP_SUMMARY
+          echo "- **Network**: Shared infrastructure with potential latency" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Local Simulation Available" >> $GITHUB_STEP_SUMMARY
+          echo "Run \`npm run test:compare\` locally to compare all 4 modes:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Local Headed**: Full desktop performance + UI" >> $GITHUB_STEP_SUMMARY
+          echo "- **Local Headless**: Full desktop performance" >> $GITHUB_STEP_SUMMARY
+          echo "- **Local Flake**: Simulated CI with throttling" >> $GITHUB_STEP_SUMMARY
+          echo "- **CI Mode**: Actual CI data (archived from this run)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Environment Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- Node.js: LTS 22 (specified in .nvmrc)" >> $GITHUB_STEP_SUMMARY
+          echo "- Runner: GitHub Actions Ubuntu" >> $GITHUB_STEP_SUMMARY
+          echo "- Playwright: Latest version with dependencies" >> $GITHUB_STEP_SUMMARY
 
-    - name: Upload CI performance data
-      uses: actions/upload-artifact@v4
-      if: always()
-      with:
-        name: ci-performance-data
-        path: ci-performance-report.json
-        retention-days: 90
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30
+
+      - name: Upload test results (raw)
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 30
+
+      - name: Upload CI performance data
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ci-performance-data
+          path: ci-performance-report.json
+          retention-days: 90

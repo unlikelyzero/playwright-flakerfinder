@@ -13,14 +13,6 @@
     "rootDir": ".",
     "types": ["node", "@playwright/test"]
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "test-results",
-    "playwright-report"
-  ]
+  "include": ["**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules", "dist", "test-results", "playwright-report"]
 }

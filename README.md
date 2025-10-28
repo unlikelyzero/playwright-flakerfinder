@@ -20,15 +20,28 @@ The key comparison is between **Local Headless** (fast, reliable) and **Local Fl
 - Tests targeting crowdstrike.com to demonstrate real-world scenarios
 - Examples of timing-sensitive operations that may fail in throttled environments
 
+## Code Quality
+
+This project uses **ESLint** for linting and **Prettier** for code formatting to maintain consistent code style.
+
+```bash
+npm run lint          # Check for linting issues
+npm run lint:fix      # Fix linting issues automatically
+npm run format        # Format code with Prettier
+npm run format:check  # Check code formatting
+```
+
 ## Setup
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd playwright-flakerfinder
 ```
 
 2. Install Node.js LTS (using nvm recommended):
+
 ```bash
 # Install nvm if you haven't already
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
@@ -42,11 +55,13 @@ node --version  # Should show v22.x.x
 ```
 
 3. Install dependencies:
+
 ```bash
 npm install
 ```
 
 4. Install Playwright browsers:
+
 ```bash
 npm run install
 ```
@@ -56,36 +71,44 @@ npm run install
 ### 3 Modes of Operation
 
 #### 1. Local Headed Mode
+
 ```bash
 npm run test:local-headed
 ```
+
 - **Purpose**: Development and debugging
 - **Browser**: Standard Chrome (headed)
 - **Performance**: Full desktop performance
 - **Use Case**: See what's happening during test execution
 
 #### 2. Local Headless Mode
+
 ```bash
 npm run test:local-headless
 ```
+
 - **Purpose**: Local testing without UI
 - **Browser**: Standard Chrome (headless)
 - **Performance**: Full desktop performance
 - **Use Case**: Fast local testing, pre-commit checks
 
 #### 3. Local Flake Mode
+
 ```bash
 npm run test:local-flake
 ```
+
 - **Purpose**: Simulate CI conditions locally
 - **Browser**: Chrome with throttling (headless)
 - **Performance**: Throttled (4x CPU, slow network)
 - **Use Case**: Reproduce CI flakiness locally
 
 #### 4. CI Mode
+
 ```bash
 npm run test:ci
 ```
+
 - **Purpose**: CI/CD pipeline testing
 - **Browser**: Chrome with throttling (headless)
 - **Performance**: Throttled (4x CPU, slow network)
@@ -94,27 +117,33 @@ npm run test:ci
 ### Additional Commands
 
 #### Run with UI mode
+
 ```bash
 npm run test:ui
 ```
 
 #### Debug mode
+
 ```bash
 npm run test:debug
 ```
 
 #### Run all tests
+
 ```bash
 npm test
 ```
 
 #### Performance Comparison
+
 ```bash
 npm run test:compare
 ```
+
 Runs all 4 modes and generates a comprehensive performance comparison report:
+
 1. **Local Headed**: Full desktop performance + UI
-2. **Local Headless**: Full desktop performance  
+2. **Local Headless**: Full desktop performance
 3. **Local Flake**: Simulated CI with throttling
 4. **CI Mode**: Actual CI data (if available from previous CI run)
 
@@ -133,6 +162,7 @@ This project includes a GitHub Actions workflow that automatically runs performa
 ### CI Results
 
 The workflow generates:
+
 - **Actual CI Performance**: How tests run in real GitHub Actions environment
 - **Archived CI Data**: `ci-performance-report.json` saved as artifact (90 days retention)
 - **Resource Constraints**: Limited CPU/memory compared to local development
@@ -156,6 +186,7 @@ The workflow generates:
 This project uses Node.js LTS version 22. The `.nvmrc` file specifies the exact version for consistency across environments.
 
 ### Using nvm locally:
+
 ```bash
 # Use the project's Node.js version
 nvm use
@@ -166,6 +197,7 @@ nvm use 22
 ```
 
 ### Benefits of nvm:
+
 - **Version Consistency**: Ensures all developers use the same Node.js version
 - **Easy Switching**: Switch between Node.js versions for different projects
 - **CI/CD Alignment**: GitHub Actions uses the same version as specified in `.nvmrc`
@@ -173,11 +205,13 @@ nvm use 22
 ## Browser Configurations
 
 ### Standard Chrome (`chrome`)
+
 - Normal browser performance
 - Standard timeouts
 - No throttling applied
 
 ### Chrome-for-Flake (`chrome-for-flake`)
+
 - **CPU Throttling**: 4x slower CPU performance
 - **Network Throttling**: 1.5 Mbps download, 0.75 Mbps upload, 150ms latency
 - **Cellular 3G Simulation**: Realistic mobile network conditions
@@ -217,6 +251,7 @@ The test suite includes scenarios designed to demonstrate flakiness:
 ## CI/CD Considerations
 
 When running in CI environments:
+
 - Use the `chrome-for-flake` configuration to simulate CI conditions
 - Increase timeouts for network and CPU operations
 - Consider retry strategies for flaky tests
@@ -225,6 +260,7 @@ When running in CI environments:
 ## Contributing
 
 This project serves as a learning tool for understanding test flakiness. Feel free to:
+
 - Add more test scenarios
 - Experiment with different throttling levels
 - Test with different websites

@@ -1,0 +1,14 @@
+node_modules
+dist
+build
+coverage
+*.log
+.DS_Store
+playwright-report
+test-results
+package-lock.json
+*.json
+!.prettierrc
+!tsconfig.json
+*.patch
+

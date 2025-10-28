@@ -15,15 +15,15 @@ export default defineConfig({
   workers: undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html', { open: 'never' }]],
-  
+
   /* Global test timeout */
   timeout: 30000,
-  
+
   /* Global expect timeout */
   expect: {
     timeout: 10000,
   },
-  
+
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
@@ -31,16 +31,16 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    
+
     /* Take screenshot on failure */
     screenshot: 'only-on-failure',
-    
+
     /* Record video on failure */
     video: 'retain-on-failure',
-    
+
     /* Navigation timeout */
     navigationTimeout: 30000,
-    
+
     /* Action timeout */
     actionTimeout: 10000,
   },
@@ -49,7 +49,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chrome',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         // Standard Chrome configuration for normal testing
       },
@@ -57,14 +57,14 @@ export default defineConfig({
 
     {
       name: 'chrome-for-flake',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         // Simulate underpowered CI environment with throttling
         // Throttling will be applied via the throttle.ts fixture
-        navigationTimeout: 120000, // Extended navigation timeout for slow conditions
+        navigationTimeout: 180000, // Extended navigation timeout for slow conditions (3 minutes)
         actionTimeout: 30000, // Extended action timeout for slow conditions
       },
-      timeout: 120000, // 2 minutes for throttled tests
+      timeout: 300000, // 5 minutes for throttled tests
     },
   ],
 

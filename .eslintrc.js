@@ -1,10 +1,6 @@
 module.exports = {
-  extends: [
-    'plugin:playwright/recommended',
-  ],
-  plugins: [
-    'playwright',
-  ],
+  extends: ['plugin:playwright/recommended'],
+  plugins: ['playwright'],
   rules: {
     // Enforce no conditional logic in tests
     'playwright/no-conditional-in-test': 'error',
