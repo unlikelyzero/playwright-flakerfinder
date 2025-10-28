@@ -11,8 +11,8 @@ export default defineConfig({
   forbidOnly: false,
   /* No retries */
   retries: 0,
-  /* Use all available workers */
-  workers: undefined,
+  /* Restrict to 2 workers for consistent performance comparison */
+  workers: 2,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [['html', { open: 'never' }]],
 

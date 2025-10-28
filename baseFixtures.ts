@@ -1,5 +1,43 @@
 import { Page, test as base } from '@playwright/test';
 
+export interface NetworkLatency {
+  url: string;
+  resourceType: string;
+  latency: number;
+  timestamp: number;
+}
+
+/**
+ * Set up network latency monitoring using the Request.timing() API
+ * This is simpler than CDP and works with all Playwright browsers
+ */
+export function setupNetworkMonitoring(page: Page, networkLatencies: NetworkLatency[]): void {
+  page.on('response', async response => {
+    try {
+      const request = response.request();
+      const url = request.url();
+
+      // Only track crowdstrike.com resources
+      if (url.includes('crowdstrike.com')) {
+        // Get timing data from the request object
+        const timing = await request.timing();
+
+        // Calculate latency from request start to response start (TTFB)
+        const latency = timing.responseStart - timing.requestStart;
+
+        networkLatencies.push({
+          url: url,
+          resourceType: request.resourceType(),
+          latency: latency,
+          timestamp: Date.now(),
+        });
+      }
+    } catch (error) {
+      // Some requests may not have timing data available
+    }
+  });
+}
+
 /**
  * Apply CPU and network throttling using the Chrome DevTools Protocol.
  * Only works on Chromium/Chrome.
@@ -43,6 +81,7 @@ export const test = base.extend<{ page: Page }>({
   // Override Playwright's built-in `page` fixture
   page: async ({ page }, use, testInfo) => {
     console.log(`Project name: ${testInfo.project.name}`);
+
     if (testInfo.project.name === 'chrome-for-flake') {
       console.log('Applying throttling to chrome-for-flake project');
       await applyThrottling(page);
