@@ -19,6 +19,12 @@ The key comparison is between **Local Headless** (fast, reliable) and **Local Fl
 - CPU throttling (2x slower) and network throttling (3 Mbps down, 1.5 Mbps up) for `chrome-for-flake`
 - Tests targeting crowdstrike.com to demonstrate real-world scenarios
 - Examples of timing-sensitive operations that may fail in throttled environments
+- Network latency measurements for static assets and API calls using Chrome DevTools Protocol
+- Detailed performance metrics including:
+  - Static assets (CSS, JavaScript, images) latency tracking
+  - API/fetch request latency monitoring
+  - Form submission endpoint performance analysis
+  - Breakdown by resource type with min/max/average statistics
 
 ## Code Quality
 
@@ -224,6 +230,83 @@ The test suite includes scenarios designed to demonstrate flakiness:
 1. **Basic Page Load**: Compares load times between standard and throttled browsers
 2. **Timing-Sensitive Interactions**: Tests that may fail due to timing issues in slow environments
 3. **Network Condition Handling**: Tests resilience to poor network conditions
+
+## Network Latency Measurements
+
+The test suite now includes comprehensive network latency tracking using Playwright's built-in `Request.timing()` API to measure actual network performance between the Playwright runner and crowdstrike.com resources.
+
+### What's Measured
+
+The network monitoring captures detailed timing information for:
+
+1. **Static Assets**
+   - CSS files: Stylesheet loading times
+   - JavaScript files: Script download and execution latency
+   - Images: Image resource loading performance
+   - Fonts: Web font loading times
+
+2. **API/Form Submission Endpoints**
+   - XHR/Fetch requests: API call latency
+   - Form submission endpoints: Form processing times
+   - Analytics endpoints: Third-party service calls
+   - Dynamic content: AJAX request performance
+
+3. **HTML Documents**
+   - Initial page loads
+   - Navigation between pages
+   - Full document retrieval times
+
+### Performance Metrics Reported
+
+For each category, the following statistics are calculated and displayed:
+
+- **Total Count**: Number of resources loaded
+- **Average Latency**: Mean time from request send to response headers received
+- **Min Latency**: Fastest resource load time
+- **Max Latency**: Slowest resource load time
+- **Top 5 Slowest**: Detailed breakdown of slowest requests
+
+### Sample Output
+
+```
+Static Assets Network Latency:
+- Total static assets: 231
+- Average latency: 150.25ms
+- Min latency: 5.12ms
+- Max latency: 875.13ms
+  - CSS files (29): avg 179.13ms
+  - JavaScript files (54): avg 171.51ms
+  - Image files (116): avg 145.32ms
+
+API/Form Submission Network Latency:
+- Total API requests: 34
+- Average latency: 131.31ms
+- Min latency: 0.03ms
+- Max latency: 875.13ms
+  Top 5 slowest API requests:
+    1. getForm?munchkinId=...: 875.13ms (script)
+    2. XDFrame: 351.77ms (document)
+    3. analyticsdata?timestamp=...: 250.02ms (fetch)
+```
+
+### Implementation Details
+
+The network monitoring is implemented using:
+
+- **Request.timing() API**: Built-in Playwright method that provides detailed timing information for each request
+- **Event-Based Monitoring**: Listens to `page.on('response')` events to capture all network requests
+- **Timing Data**: Calculates latency from `requestStart` to `responseStart` for accurate Time-To-First-Byte (TTFB) measurement
+- **Resource Filtering**: Only tracks crowdstrike.com resources to focus on target performance
+- **Cross-Browser Support**: Works with all Playwright browsers, not just Chromium
+
+### Comparing Latency Across Configurations
+
+The network latency measurements are particularly useful for comparing performance between:
+
+- **Standard Chrome**: Baseline network performance
+- **Throttled Chrome**: Network performance under simulated CI conditions (100ms added latency, 3 Mbps bandwidth limit)
+
+This helps identify which resources are most affected by network conditions and which API calls may cause flakiness in CI environments.
 
 ## Understanding Flakiness
 

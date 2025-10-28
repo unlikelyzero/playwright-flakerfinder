@@ -1,0 +1,17 @@
+{
+  "success": true,
+  "duration": 8582,
+  "metrics": {
+    "loadTimes": [
+      13
+    ],
+    "throttlingApplied": false,
+    "testResults": {
+      "passed": 5,
+      "failed": 0
+    }
+  },
+  "output": "\n> playwright-flakerfinder@1.0.0 test:local-headless\n> playwright test --project=chrome\n\n\nRunning 5 tests using 2 workers\nProject name: chrome\nNo throttling applied\nProject name: chrome\nNo throttling applied\nStarting comprehensive CrowdStrike user journey test...\nStandard Chrome load time: 13ms\n·Project name: chrome\nNo throttling applied\nThrottled Chrome (chrome-for-flake) load time: 13ms\n·Project name: chrome\nNo throttling applied\nJavaScript execution time: 76ms\n·Project name: chrome\nNo throttling applied\nNetwork request completion time: 45ms\n·SUCCESS: Cookie consent banner handled\nSUCCESS: Platform products verified with aria snapshot\nSUCCESS: Trial page cookie consent handled\nSUCCESS: Filled First Name field (no submission)\nSUCCESS: Filled Last Name field (no submission)\nSUCCESS: Filled Company field (no submission)\nSUCCESS: Filled Email field (no submission)\nSUCCESS: Filled Phone field (no submission)\nSUCCESS: Selected country from dropdown (no submission)\nSUCCESS: Checked terms and conditions (no submission)\nSUCCESS: Submit button found but intentionally not clicked\nSUCCESS: Tested 6 form fields (no submission)\nJourney Performance Metrics:\n- Total journey time: 6362ms\n- Network requests: 0\nComprehensive user journey test completed successfully!\nFound 0 JavaScript errors\nFound 0 critical JavaScript errors\n·\n  5 passed (7.7s)\n",
+  "timestamp": "2025-10-28T16:15:15.800Z",
+  "environment": "GitHub Actions CI"
+}

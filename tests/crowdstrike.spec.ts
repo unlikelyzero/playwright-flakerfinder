@@ -1,4 +1,4 @@
-import { test, expect } from '../baseFixtures';
+import { test, expect, NetworkLatency, setupNetworkMonitoring } from '../baseFixtures';
 
 test.describe('crowdstrike website - comprehensive user journey test', () => {
   test.afterEach(async ({ page }) => {
@@ -26,6 +26,12 @@ test.describe('crowdstrike website - comprehensive user journey test', () => {
   test('comprehensive end-to-end user journey - deep platform exploration', async ({ page }) => {
     console.log('Starting comprehensive CrowdStrike user journey test...');
     const journeyStartTime = Date.now();
+
+    // Track network latency for all requests
+    const networkLatencies: NetworkLatency[] = [];
+
+    // Set up network monitoring using the simpler Request.timing() API
+    setupNetworkMonitoring(page, networkLatencies);
 
     await test.step('Initial Homepage Load and Cookie Handling', async () => {
       await page.goto('https://www.crowdstrike.com');
@@ -110,22 +116,125 @@ test.describe('crowdstrike website - comprehensive user journey test', () => {
       const journeyEndTime = Date.now();
       const totalJourneyTime = journeyEndTime - journeyStartTime;
 
-      // Monitor network requests throughout the journey
-      const allRequests: string[] = [];
-      page.on('request', request => {
-        allRequests.push(request.url());
-      });
-
       console.log(`Journey Performance Metrics:`);
       console.log(`- Total journey time: ${totalJourneyTime}ms`);
-      console.log(`- Network requests: ${allRequests.length}`);
+      console.log(`- Network requests tracked: ${networkLatencies.length}`);
+
+      // Analyze static assets (CSS, JS, images, fonts)
+      const staticAssets = networkLatencies.filter(
+        n =>
+          n.resourceType === 'stylesheet' ||
+          n.resourceType === 'script' ||
+          n.resourceType === 'image' ||
+          n.resourceType === 'font'
+      );
+
+      // eslint-disable-next-line playwright/no-conditional-in-test
+      if (staticAssets.length > 0) {
+        const avgStaticLatency =
+          staticAssets.reduce((sum, n) => sum + n.latency, 0) / staticAssets.length;
+        const maxStaticLatency = Math.max(...staticAssets.map(n => n.latency));
+        const minStaticLatency = Math.min(...staticAssets.map(n => n.latency));
+
+        console.log(`\nStatic Assets Network Latency:`);
+        console.log(`- Total static assets: ${staticAssets.length}`);
+        console.log(`- Average latency: ${avgStaticLatency.toFixed(2)}ms`);
+        console.log(`- Min latency: ${minStaticLatency.toFixed(2)}ms`);
+        console.log(`- Max latency: ${maxStaticLatency.toFixed(2)}ms`);
+
+        // Show breakdown by resource type
+        const cssAssets = staticAssets.filter(n => n.resourceType === 'stylesheet');
+        const jsAssets = staticAssets.filter(n => n.resourceType === 'script');
+        const imageAssets = staticAssets.filter(n => n.resourceType === 'image');
+
+        // eslint-disable-next-line playwright/no-conditional-in-test
+        if (cssAssets.length > 0) {
+          const avgCssLatency = cssAssets.reduce((sum, n) => sum + n.latency, 0) / cssAssets.length;
+          console.log(`  - CSS files (${cssAssets.length}): avg ${avgCssLatency.toFixed(2)}ms`);
+        }
+        // eslint-disable-next-line playwright/no-conditional-in-test
+        if (jsAssets.length > 0) {
+          const avgJsLatency = jsAssets.reduce((sum, n) => sum + n.latency, 0) / jsAssets.length;
+          console.log(
+            `  - JavaScript files (${jsAssets.length}): avg ${avgJsLatency.toFixed(2)}ms`
+          );
+        }
+        // eslint-disable-next-line playwright/no-conditional-in-test
+        if (imageAssets.length > 0) {
+          const avgImageLatency =
+            imageAssets.reduce((sum, n) => sum + n.latency, 0) / imageAssets.length;
+          console.log(
+            `  - Image files (${imageAssets.length}): avg ${avgImageLatency.toFixed(2)}ms`
+          );
+        }
+      }
+
+      // Analyze API/fetch requests (likely form submission endpoints)
+      const apiRequests = networkLatencies.filter(
+        n =>
+          n.resourceType === 'fetch' ||
+          n.resourceType === 'xhr' ||
+          n.url.includes('/api/') ||
+          n.url.includes('/submit') ||
+          n.url.includes('/form')
+      );
+
+      // eslint-disable-next-line playwright/no-conditional-in-test
+      if (apiRequests.length > 0) {
+        const avgApiLatency =
+          apiRequests.reduce((sum, n) => sum + n.latency, 0) / apiRequests.length;
+        const maxApiLatency = Math.max(...apiRequests.map(n => n.latency));
+        const minApiLatency = Math.min(...apiRequests.map(n => n.latency));
+
+        console.log(`\nAPI/Form Submission Network Latency:`);
+        console.log(`- Total API requests: ${apiRequests.length}`);
+        console.log(`- Average latency: ${avgApiLatency.toFixed(2)}ms`);
+        console.log(`- Min latency: ${minApiLatency.toFixed(2)}ms`);
+        console.log(`- Max latency: ${maxApiLatency.toFixed(2)}ms`);
+
+        // Show top 5 slowest API requests
+        const slowestApi = [...apiRequests].sort((a, b) => b.latency - a.latency).slice(0, 5);
+        console.log(`  Top 5 slowest API requests:`);
+        slowestApi.forEach((req, idx) => {
+          const urlParts = req.url.split('/');
+          const shortUrl = urlParts[urlParts.length - 1] || urlParts[urlParts.length - 2];
+          console.log(
+            `    ${idx + 1}. ${shortUrl}: ${req.latency.toFixed(2)}ms (${req.resourceType})`
+          );
+        });
+      } else {
+        console.log(`\nAPI/Form Submission Network Latency:`);
+        console.log(`- No API/fetch requests detected in this test run`);
+      }
+
+      // Document requests (HTML pages)
+      const documentRequests = networkLatencies.filter(n => n.resourceType === 'document');
+      // eslint-disable-next-line playwright/no-conditional-in-test
+      if (documentRequests.length > 0) {
+        const avgDocLatency =
+          documentRequests.reduce((sum, n) => sum + n.latency, 0) / documentRequests.length;
+        console.log(`\nHTML Document Network Latency:`);
+        console.log(`- Total HTML pages loaded: ${documentRequests.length}`);
+        console.log(`- Average latency: ${avgDocLatency.toFixed(2)}ms`);
+      }
+
+      // Overall network performance summary
+      // eslint-disable-next-line playwright/no-conditional-in-test
+      if (networkLatencies.length > 0) {
+        const overallAvgLatency =
+          networkLatencies.reduce((sum, n) => sum + n.latency, 0) / networkLatencies.length;
+        const overallMaxLatency = Math.max(...networkLatencies.map(n => n.latency));
+        console.log(`\nOverall Network Performance:`);
+        console.log(`- Average latency across all resources: ${overallAvgLatency.toFixed(2)}ms`);
+        console.log(`- Maximum latency observed: ${overallMaxLatency.toFixed(2)}ms`);
+      }
 
       // Assertions - use a reasonable default max time
       // Adjust based on your test environment needs
       const maxJourneyTime = 300000; // 5 minutes max
       expect(totalJourneyTime).toBeLessThan(maxJourneyTime);
 
-      console.log('Comprehensive user journey test completed successfully!');
+      console.log('\nComprehensive user journey test completed successfully!');
     });
   });
 });
