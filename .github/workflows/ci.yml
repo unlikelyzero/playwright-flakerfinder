@@ -9,6 +9,9 @@ on:
 jobs:
   test-comparison:
     runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-jammy
+      options: --user 1001
 
     steps:
       - name: Checkout code
@@ -30,9 +33,6 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
-
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps
 
       - name: Run CI Mode Tests (Actual CI Environment)
         run: npm run test:local-headless
@@ -135,7 +135,7 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "This shows how tests perform in the actual GitHub Actions CI environment:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Environment**: GitHub Actions Ubuntu runner" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: Playwright Docker container on GitHub Actions" >> $GITHUB_STEP_SUMMARY
           echo "- **Resources**: Limited CPU and memory compared to local development" >> $GITHUB_STEP_SUMMARY
           echo "- **Network**: Shared infrastructure with potential latency" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -148,8 +148,8 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Environment Configuration" >> $GITHUB_STEP_SUMMARY
           echo "- Node.js: LTS 22 (specified in .nvmrc)" >> $GITHUB_STEP_SUMMARY
-          echo "- Runner: GitHub Actions Ubuntu" >> $GITHUB_STEP_SUMMARY
-          echo "- Playwright: Latest version with dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "- Container: Playwright Docker (mcr.microsoft.com/playwright:v1.56.1-jammy)" >> $GITHUB_STEP_SUMMARY
+          echo "- Browsers: Pre-installed in Docker image" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
