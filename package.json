@@ -9,7 +9,7 @@
     "test:local-headed": "playwright test --project=chrome --headed",
     "test:local-headless": "playwright test --project=chrome",
     "test:local-flake": "playwright test --project=chrome-for-flake",
-    "test:flake-new": "playwright test --project=chrome-for-flake --only-changed --repeat-each 10",
+    "test:flake-new": "playwright test --project=chrome-for-flake --only-changed=main --repeat-each 10",
     "test:ci": "playwright test --project=chrome-for-flake",
     "test:debug": "playwright test --debug",
     "test:ui": "playwright test --ui",
