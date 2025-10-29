@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-const { execSync } = require('child_process');
-const fs = require('fs');
+import { execSync } from 'child_process';
+import { writeFileSync } from 'fs';
 
 console.log('Capturing CI performance metrics...');
 
@@ -46,7 +46,7 @@ try {
     environment: 'GitHub Actions CI',
   };
 
-  fs.writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
+  writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
   console.log('SUCCESS: CI performance data saved');
 } catch (error) {
   console.log('ERROR: Failed to capture CI data:', error.message);
@@ -58,5 +58,5 @@ try {
     timestamp: new Date().toISOString(),
     environment: 'GitHub Actions CI',
   };
-  fs.writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
+  writeFileSync('ci-performance-report.json', JSON.stringify(ciData, null, 2));
 }
