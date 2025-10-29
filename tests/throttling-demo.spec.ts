@@ -71,4 +71,27 @@ test.describe('throttling demonstration', () => {
     const status = await page.textContent('#status');
     expect(status).toContain('Request completed');
   });
+
+  test('should handle basic DOM interactions reliably', async ({ page }) => {
+    // This test demonstrates that basic operations work consistently
+    // even under throttled conditions
+    const startTime = Date.now();
+
+    const testPage =
+      'data:text/html,<html><body><button id="btn">Click Me</button><div id="output"></div><script>document.getElementById("btn").onclick=()=>{document.getElementById("output").textContent="Clicked!"}</script></body></html>';
+
+    await page.goto(testPage);
+
+    // Wait for button to be ready
+    await page.waitForSelector('#btn');
+
+    // Click the button
+    await page.click('#btn');
+
+    // Verify the output
+    await expect(page.locator('#output')).toHaveText('Clicked!');
+
+    const executionTime = Date.now() - startTime;
+    console.log(`DOM interaction test completed in: ${executionTime}ms`);
+  });
 });
