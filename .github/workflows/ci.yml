@@ -7,6 +7,61 @@ on:
     branches: [main]
 
 jobs:
+  flake-detection:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.56.1-jammy
+      options: --user 1001
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Flake Testing for Changed Tests
+        run: npm run test:flake-new
+        continue-on-error: false
+        env:
+          CI: true
+
+      - name: Generate Flake Testing Report
+        if: always()
+        run: |
+          echo "## Flake Detection Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This job validates that all changed tests pass consistently under throttled conditions." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- **Project**: chrome-for-flake" >> $GITHUB_STEP_SUMMARY
+          echo "- **CPU Throttling**: 2x slowdown" >> $GITHUB_STEP_SUMMARY
+          echo "- **Network Throttling**: 3 Mbps download, 1.5 Mbps upload, 100ms latency" >> $GITHUB_STEP_SUMMARY
+          echo "- **Iterations**: 10 repeats per changed test" >> $GITHUB_STEP_SUMMARY
+          echo "- **Detection**: Only tests modified in this PR/commit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Purpose" >> $GITHUB_STEP_SUMMARY
+          echo "Prevents flaky tests from being merged by running each changed test 10 times under CI-like conditions." >> $GITHUB_STEP_SUMMARY
+          echo "If any iteration fails, the build will fail." >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload flake test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: flake-test-results
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 30
+
   test-comparison:
     runs-on: ubuntu-latest
     container:
